@@ -1,0 +1,20 @@
+# Backend Python
+backend/venv/
+backend/__pycache__/
+backend/*.pyc
+backend/.env
+backend/faiss_index/
+backend/*.faiss
+backend/*.pkl
+backend/.cache/
+
+# Frontend React
+frontend/node_modules/
+frontend/build/
+frontend/dist/
+frontend/.env
+
+# General
+.env
+*.log
+.DS_Store
