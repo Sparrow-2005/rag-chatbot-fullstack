@@ -4,8 +4,7 @@ import shutil
 from fastapi import UploadFile, File
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
-from langchain_huggingface import HuggingFaceEndpointEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings, HuggingFaceEndpoint, ChatHuggingFace
 from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import PromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -24,10 +23,7 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-embeddings = HuggingFaceEndpointEmbeddings(
-    repo_id="sentence-transformers/all-MiniLM-L6-v2",
-    huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN")
-)
+embeddings=HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 vector_store=None
 llm = HuggingFaceEndpoint(
     repo_id="openai/gpt-oss-120b",

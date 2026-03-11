@@ -4,7 +4,7 @@ import shutil
 from fastapi import UploadFile, File
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from langchain_huggingface import HuggingFaceEmbeddings, HuggingFaceEndpoint, ChatHuggingFace
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import PromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -13,6 +13,7 @@ from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
 from pydantic import BaseModel
 from dotenv import load_dotenv
+from huggingface_hub import InferenceClient
 load_dotenv()
 app=FastAPI()
 app.add_middleware(
@@ -25,12 +26,10 @@ app.add_middleware(
 
 embeddings=HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 vector_store=None
-llm = HuggingFaceEndpoint(
-    repo_id="openai/gpt-oss-120b",
-    temperature=0.5,
-    huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN")
+client = InferenceClient(
+    model="openai/gpt-oss-120b",
+    token=os.getenv("HUGGINGFACEHUB_API_TOKEN")
 )
-chat_model = ChatHuggingFace(llm=llm)
 prompt = PromptTemplate(
     template="""
 You are a smart RAG Chat-bot who carefully reads PDF
@@ -63,27 +62,6 @@ memory = ConversationBufferMemory(
     return_messages=False
 )
 
-# @app.post("/upload-pdf") 
-# async def upload_pdf(file: UploadFile=File(...)):
-#     global vector_store,me
-
-#     with tempfile.NamedTemporaryFile(delete=False,suffix=".pdf") as temp_file:
-#         temp_file.write(await file.read())
-#         temp_path=temp_file.name
-
-#     loader=PyPDFLoader(temp_path)
-#     documents=loader.load()
-
-#     text_splitter=RecursiveCharacterTextSplitter(
-#         chunk_size=1000,
-#         chunk_overlap=200
-#     )
-#     text=text_splitter.split_documents(documents)
-#     vector_store=FAISS.from_documents(text,embeddings)
-
-#     os.remove(temp_path)
-
-#     return {"message":"PDF uploaded and processed successfully."}
 @app.post("/upload-pdf")
 async def upload_pdf(file: UploadFile = File(...)):
     global vector_store, memory
@@ -131,21 +109,32 @@ async def ask_question(data: QuestionRequest):
 
     chat_history = memory.load_memory_variables({})["chat_history"]
 
-    final_prompt = prompt.invoke({
-        "chat_history": chat_history,
-        "context": context,
-        "question": question
-    })
+    final_prompt = prompt.format(
+    chat_history=chat_history,
+    context=context,
+    question=question
+    )
 
-    response = chat_model.invoke(final_prompt)
+    response = client.chat_completion(
+    messages=[
+        {
+            "role": "user",
+            "content": final_prompt
+        }
+    ],
+    max_tokens=512,
+    temperature=0.5
+    )
+
+    answer = response.choices[0].message.content
 
     memory.save_context(
-        {"input": question},
-        {"output": response.content}
+    {"input": question},
+    {"output": answer}
     )
 
     return {
-        "answer": response.content,
+        "answer": answer,
         "sources": [
                         {
                             "page": doc.metadata.get("page"),
