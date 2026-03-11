@@ -16,9 +16,9 @@ export default function UploadSection({
 
     try {
       setLoading(true);
-      await axios.post("http://localhost:8000/upload-pdf", formData);
+      await axios.post("https://rag-chatbot-fullstack-5.onrender.com/upload-pdf", formData);
 
-      onUploadSuccess(file.name);   // 🔥 notify parent
+      onUploadSuccess(file.name);  
     } catch (error) {
       console.error(error);
       alert("Upload failed ❌");

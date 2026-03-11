@@ -19,7 +19,7 @@ export default function ChatBox() {
       setLoading(true);
 
       const res = await axios.post(
-        "http://localhost:8000/ask",
+        "https://rag-chatbot-fullstack-5.onrender.com/ask",
         {
           question: question
         }
